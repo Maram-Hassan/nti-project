@@ -14,6 +14,7 @@ import {
 import TodoForm from "./todo-form";
 
 const API_URL = process.env.REACT_APP_API_URL;
+console.log('API_URL:', API_URL);
 
 const Home = () => {
   const [todos, setTodos] = useState([]);
@@ -47,7 +48,7 @@ const Home = () => {
 
   const handleNewTodo = async (todo) => {
     try {
-      await axios.post(`${API_URL}/todos`, todo);
+      await axios.post(`http://localhost:3001/api/todos`, todo);
       await getTodos();
       setModalOpen(false);
     } catch (err) {
