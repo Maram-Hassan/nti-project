@@ -1,0 +1,59 @@
+---
+- name: Install and Configure CloudWatch Agent
+  hosts: cloud-watch
+  become: yes
+  tasks:
+    - name: Download CloudWatch Agent
+      get_url:
+        url: https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+        dest: /tmp/amazon-cloudwatch-agent.deb
+
+    - name: Install CloudWatch Agent
+      apt:
+        deb: /tmp/amazon-cloudwatch-agent.deb
+        state: present
+
+    - name: Clean up the deb file
+      file:
+        path: /tmp/amazon-cloudwatch-agent.deb
+        state: absent
+
+    - name: Create CloudWatch Agent configuration file
+      copy:
+        dest: /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+        content: |
+          {
+            "agent": {
+              "metrics_collection_interval": 60,
+              "run_as_user": "root"
+            },
+            "logs": {
+              "logs_collected": {
+                "files": {
+                  "collect_list": [
+                    {
+                      "file_path": "/var/log/syslog",
+                      "log_group_name": "syslog",
+                      "log_stream_name": "{instance_id}",
+                      "timezone": "UTC"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+
+    - name: Start CloudWatch Agent service
+      systemd:
+        name: amazon-cloudwatch-agent
+        state: started
+        enabled: yes
+
+    - name: Verify CloudWatch Agent service status
+      command: systemctl status amazon-cloudwatch-agent
+      register: cloudwatch_status
+      ignore_errors: yes
+
+    - name: Show CloudWatch Agent service status
+      debug:
+        var: cloudwatch_status.stdout
